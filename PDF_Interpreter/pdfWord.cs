@@ -14,6 +14,7 @@ namespace PDF_Interpreter
         private double mfEndY = -1;
         private double mfPageTotalX = -1;
         private double mfPageTotalY = -1;
+        private bool mbCoordsFlipped = false;
 
         public int CharCount { get => miCharCount; }
         public int LineNo { get => miLineNo; } //line within article.  allows phrases to be found.
@@ -23,15 +24,27 @@ namespace PDF_Interpreter
         public double StartY { get => mfStartY; }
         public double EndX { get => mfEndX; }
         public double EndY { get => mfEndY; }
-        public double PageTotalX { get => mfPageTotalX; }
-        public double PageTotalY { get => mfPageTotalY; }
-
-        //better coordinates for drawing rectangles.
-        public double Xpct { get => mfStartX/ mfPageTotalX; }
-        public double WidthPct { get => (EndX - mfStartX) / mfPageTotalX; }
-        public double Ypct { get => mfStartY / mfPageTotalY; }
-        public double HeightPct { get => (EndY - mfStartY) / mfPageTotalY; }
         
+        public bool IsValid
+        {
+            get
+            {
+                //ONLY if the word has characaters, AND valid dimensions.
+                return CharCount > 0 && !double.IsNaN(mfStartX * mfStartY * mfEndX * mfEndY* mfPageTotalX* mfPageTotalY);
+            }
+        }
+
+        ////better coordinates for drawing rectangles.
+        public double Xpct { get => mfStartX / (mbCoordsFlipped ? mfPageTotalY : mfPageTotalX); }
+        public double WidthPct { get => (EndX - mfStartX) / (mbCoordsFlipped ? mfPageTotalY : mfPageTotalX); }
+        public double Ypct { get => mfStartY / (mbCoordsFlipped ? mfPageTotalX : mfPageTotalY); }
+        public double HeightPct { get => (EndY - mfStartY) / (mbCoordsFlipped ? mfPageTotalX : mfPageTotalY); }
+
+        public pdfWord(  bool bCoordsFlipped)
+        {
+            mbCoordsFlipped = bCoordsFlipped;
+        }
+
         public void SetWordPosition(int iLineNo, int iWordNo)
         {
             miLineNo = iLineNo;
@@ -60,8 +73,9 @@ namespace PDF_Interpreter
             else if (mfPageTotalY != oChar.PageHeight)
                 throw new Exception("Page height varied within a word!");
             
+
             //form the word.
-            msVal += oChar.Val;
+            msVal += oChar.Text;
             
             miCharCount++;
 

@@ -36,13 +36,13 @@ namespace PDF_Interpreter
             proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             proc.Start();
             proc.WaitForExit();
-            
+
 
         }
-        
+
         private void cmdBrowse_Click(object sender, EventArgs e)
         {
-            FileInfo oFile = new FileInfo( txtFile.Text.Trim());
+            FileInfo oFile = new FileInfo(txtFile.Text.Trim());
 
             if (!oFile.Exists)
                 throw new Exception("that File does not exist.");
@@ -52,40 +52,45 @@ namespace PDF_Interpreter
             {
                 WriteTestHTML(oFile.FullName, oFile.DirectoryName);
             }
-
-
-
-
-
+           
         }
 
         private void WriteTestHTML(string sFile, string sDestDirectory)
         {
+            bool bGenerateHTML = chkDoImageFiles.Checked;
 
             if (!sDestDirectory.EndsWith(@"\"))
                 sDestDirectory += @"\";
 
-            PdfToJpg(sFile, sDestDirectory);
+            if (bGenerateHTML)
+                PdfToJpg(sFile, sDestDirectory);
 
             //THIS HOLDS PDFbox and does all the work of recognizing characters/words.
             pdfDocument oDoc = new pdfDocument(sFile);
+            
+            //THIS IS THE TRANSLATION FUNCTION
+            oDoc.EvaluateAllPages();
 
-            foreach(KeyValuePair<int, pdfPage> oKVP in oDoc.Pages)
+            if (bGenerateHTML)
             {
-                int iPageNo = oKVP.Key;
-                pdfPage oPage = oKVP.Value;
-
-                string sImageFile = string.Format("{0}p-{1:000}.jpg", sDestDirectory, iPageNo);
-
-                int iImageWidthPx = -1;
-                int iImageHeightPx = -1;
-                using (Image oPageImage = Image.FromFile(sImageFile))
+                foreach (KeyValuePair<int, pdfPage> oKVP in oDoc.Pages)
                 {
-                    iImageWidthPx = oPageImage.Width;
-                    iImageHeightPx = oPageImage.Height;
-                }
+                    int iPageNo = oKVP.Key;
+                    pdfPage oPage = oKVP.Value;
+                    
+                    string sImageFile = string.Format("{0}p-{1:000}.jpg", sDestDirectory, iPageNo);
 
-                StringBuilder oSB = new StringBuilder(@"<html>
+                    int iImageWidthPx = -1;
+                    int iImageHeightPx = -1;
+                    using (Image oPageImage = Image.FromFile(sImageFile))
+                    {
+                        iImageWidthPx = oPageImage.Width;
+                        iImageHeightPx = oPageImage.Height;
+                    }
+
+                    Debug.Print("{0},{1},{2}", iPageNo, iImageWidthPx, iImageHeightPx);
+
+                    StringBuilder oSB = new StringBuilder(@"<html>
                                                             <head>
                                                                 <style type=""text/css"">
 
@@ -108,29 +113,54 @@ namespace PDF_Interpreter
                                                             </head>
                                                             <body>");
 
-                oSB.AppendFormat(@"<svg xmlns=""http://www.w3.org/2000/svg"" xmlns:xlink=""http://www.w3.org/1999/xlink""  width=""{0}"" height=""{1}"">
-                    <image xlink:href=""file:///{2}""  width=""{0}"" height=""{1}""/>", iImageWidthPx, iImageHeightPx, sImageFile.Replace('\\','/'));
+                    oSB.AppendFormat(@"<svg xmlns=""http://www.w3.org/2000/svg"" xmlns:xlink=""http://www.w3.org/1999/xlink""  width=""{0}"" height=""{1}"">
+                    <image xlink:href=""file:///{2}""  width=""{0}"" height=""{1}""/>", iImageWidthPx, iImageHeightPx, sImageFile.Replace('\\', '/'));
 
-                foreach(pdfArticle oArticle in oPage.Articles)
-                {
-                    foreach(pdfWord oWD in oArticle.Words)
-                        oSB.AppendFormat(@"<rect x=""{0}"" y=""{1}"" width=""{2}"" height=""{3}"" class=""wordBox""/>", oWD.Xpct * iImageWidthPx, oWD.Ypct * iImageHeightPx, oWD.WidthPct * iImageWidthPx, oWD.HeightPct * iImageHeightPx);
-                }
+                    foreach (pdfArticle oArticle in oPage.Articles)
+                    {
+                        foreach (pdfWord oWD in oArticle.Words)
+                            oSB.AppendFormat(@"<rect x=""{0}"" y=""{1}"" width=""{2}"" height=""{3}"" class=""wordBox""/>", oWD.Xpct * iImageWidthPx, oWD.Ypct * iImageHeightPx, oWD.WidthPct * iImageWidthPx, oWD.HeightPct * iImageHeightPx);
+                    }
 
-                oSB.Append(@"</svg>
+                    oSB.Append(@"</svg>
                             </body>
                             </html>");
 
-                //put the example to file as HTML.
-                string sPageAndExt = string.Format("-pp{0:000}.html", iPageNo);
-                string sHTMLOutputFile = sFile.ToLower().Replace(".pdf", sPageAndExt);
-                File.WriteAllText(sHTMLOutputFile, oSB.ToString());
+                    //put the example to file as HTML
+                    string sPageAndExt = string.Format("-pp{0:000}.html", iPageNo);
+                    string sOutputFile = sFile.ToLower().Replace(".pdf", sPageAndExt);
+                    File.WriteAllText(sOutputFile, oSB.ToString());
 
+                }
 
             }
-            
+            else
+            {
+                StringBuilder oSB = new StringBuilder("\"Page\",\"Article\",\"Line\",\"Word\",\"Text\",\"X%\",\"Y%\",\"Width%\",\"Height%\",\"PageXpx\",\"PageYpx\"\r\n");
 
+                foreach (KeyValuePair<int, pdfPage> oKVP in oDoc.Pages)
+                {
+                    int iPageNo = oKVP.Key;
+                    pdfPage oPage = oKVP.Value;
+                    int iArticle = 1;
+                    foreach (pdfArticle oArticle in oPage.Articles)
+                    {
+                        foreach (pdfWord oWD in oArticle.Words)
+                            oSB.AppendFormat("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\",\"{7}\",\"{8}\"\r\n", iPageNo, iArticle, oWD.LineNo, oWD.WordNo, oWD.Val, oWD.Xpct, oWD.Ypct, oWD.WidthPct, oWD.HeightPct);
+
+                        iArticle++;
+                    }
+                }
+
+                //put the example to file 
+                string sOutputFile = sFile.ToLower().Replace(".pdf", "-words.csv");
+                File.WriteAllText(sOutputFile, oSB.ToString());
+
+            }
+
+            MessageBox.Show("DONE", "PDF Parse Complete", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
 
         }
+
     }
 }
