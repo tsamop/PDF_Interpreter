@@ -37,8 +37,7 @@ namespace PDF_Interpreter
                 isLandscape = !isLandscape;
                 mbCoordinatesFlipped = true;
             }
-
-            GetField_Extension.PageRotation = iRotation;
+            
             System.Diagnostics.Debug.Print("{0}, {1}, {2}, {3}", iPageNo, mediaBox.getWidth(), mediaBox.getHeight(), iRotation);
             
             //feed the stripper a page.

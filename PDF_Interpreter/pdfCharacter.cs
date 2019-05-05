@@ -43,10 +43,7 @@ namespace PDF_Interpreter
                 msThisText = maoPDFboxCharacter.GetField("str").ToString();
 
                 miRotation = Convert.ToInt32(maoPDFboxCharacter.GetField("rot"));
-
-                if (miRotation != GetField_Extension.PageRotation)
-                    System.Diagnostics.Debug.Print("{)}", miRotation);
-
+                
                 //the Y's appear to be the bottom of the char?
                 mfMaxTextHeight = Math.Abs(Convert.ToDouble(maoPDFboxCharacter.GetField("maxTextHeight")));
 
