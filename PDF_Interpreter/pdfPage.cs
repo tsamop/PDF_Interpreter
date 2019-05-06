@@ -27,7 +27,7 @@ namespace PDF_Interpreter
             moThisPage = oPage;
 
             //https://stackoverflow.com/questions/38919551/how-to-find-pdf-is-portrait-or-landscape-using-pdfbox-library-in-java
-            PDRectangle mediaBox = oPage.findMediaBox();
+            PDRectangle mediaBox = oPage.findCropBox(); // oPage.findMediaBox();
             bool isLandscape = mediaBox.getWidth() > mediaBox.getHeight();
             
             // however...the page could be rotated:
