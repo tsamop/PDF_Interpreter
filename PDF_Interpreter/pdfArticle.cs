@@ -24,60 +24,63 @@ namespace PDF_Interpreter
             foreach (object oChar in aoCharacters)
             {
                 pdfCharacter oPChar = new pdfCharacter(oChar);
-                maoCharacters.Add(oPChar);
-
-                if (oPChar.Text == " ")
+                if (oPChar.IsValid)
                 {
-                    //spaces don't get added to words, they terminate words
-                    if (oCurrentWord.IsValid)
+                    maoCharacters.Add(oPChar);
+
+                    if (oPChar.Text == " ")
                     {
-                        maoWords.Add(oCurrentWord);
+                        //spaces don't get added to words, they terminate words
+                        if (oCurrentWord.IsValid)
+                        {
+                            maoWords.Add(oCurrentWord);
 
-                        oPreviousWord = oCurrentWord;
-                        oCurrentWord = new pdfWord(bCoordsFlipped);
+                            oPreviousWord = oCurrentWord;
+                            oCurrentWord = new pdfWord(bCoordsFlipped);
 
+                        }
                     }
-                }
-                else //we have a character to put in a word.
-                {
-                    //if this character is someplace other than on the end of the word, then quick start a new word
-                    // this reads
-                    // if character came before start of word
-                    // if there is a gap between the end of the word and the character
-                    // if the character is well below the word
-                    // if the character is well above the word.
-                    //  ...then start a new line.
-                    if (oCurrentWord.IsValid && (oPChar.X < oCurrentWord.StartX 
-                                                    || oPChar.X > oCurrentWord.EndX + MC_WORD_END_SAFETY_MARGIN 
-                                                    || oCurrentWord.StartY + ((oCurrentWord.EndY - oCurrentWord.StartY) * MC_LINE_HEIGHT_TRIGGER_PCT) < oPChar.Y
-                                                    || oCurrentWord.StartY > oPChar.Y + (oPChar.MaxTextHeight * MC_LINE_HEIGHT_TRIGGER_PCT))) 
+                    else //we have a character to put in a word.
                     {
+                        //if this character is someplace other than on the end of the word, then quick start a new word
+                        // this reads
+                        // if character came before start of word
+                        // if there is a gap between the end of the word and the character
+                        // if the character is well below the word
+                        // if the character is well above the word.
+                        //  ...then start a new line.
+                        if (oCurrentWord.IsValid && (oPChar.X < oCurrentWord.StartX
+                                                        || oPChar.X > oCurrentWord.EndX + MC_WORD_END_SAFETY_MARGIN
+                                                        || oCurrentWord.StartY + ((oCurrentWord.EndY - oCurrentWord.StartY) * MC_LINE_HEIGHT_TRIGGER_PCT) < oPChar.Y
+                                                        || oCurrentWord.StartY > oPChar.Y + (oPChar.MaxTextHeight * MC_LINE_HEIGHT_TRIGGER_PCT)))
+                        {
                             maoWords.Add(oCurrentWord);
                             oPreviousWord = oCurrentWord;
                             oCurrentWord = new pdfWord(bCoordsFlipped);
-                    }
-
-                    //ON THE FIRST CHARACTER OF A WORD, ASSIGN THE WORD POSITION IN THE ARTICLE 
-                    if(oCurrentWord.CharCount == 0)
-                    {
-                        //if the new word is below OR ABOVE!! the previous word, then start a new line.
-                        if (oPreviousWord != null && (oPreviousWord.StartY + ((oPreviousWord.EndY- oPreviousWord.StartY) * MC_LINE_HEIGHT_TRIGGER_PCT) < oPChar.Y
-                                                        ||
-                                                      oPreviousWord.StartY > oPChar.Y + (oPChar.MaxTextHeight * MC_LINE_HEIGHT_TRIGGER_PCT))) 
-                        {
-                            iLineNo++;
-                            iWordNo = 1;
                         }
-                        else
-                        {
-                            iWordNo++;
-                        }
-                        
-                        oCurrentWord.SetWordPosition(iLineNo, iWordNo);
-                    }
 
-                    //add the character to the correct word
-                    oCurrentWord.Push(oPChar);
+                        //ON THE FIRST CHARACTER OF A WORD, ASSIGN THE WORD POSITION IN THE ARTICLE 
+                        if (oCurrentWord.CharCount == 0)
+                        {
+                            //if the new word is below OR ABOVE!! the previous word, then start a new line.
+                            if (oPreviousWord != null && (oPreviousWord.StartY + ((oPreviousWord.EndY - oPreviousWord.StartY) * MC_LINE_HEIGHT_TRIGGER_PCT) < oPChar.Y
+                                                            ||
+                                                          oPreviousWord.StartY > oPChar.Y + (oPChar.MaxTextHeight * MC_LINE_HEIGHT_TRIGGER_PCT)))
+                            {
+                                iLineNo++;
+                                iWordNo = 1;
+                            }
+                            else
+                            {
+                                iWordNo++;
+                            }
+
+                            oCurrentWord.SetWordPosition(iLineNo, iWordNo);
+                        }
+
+                        //add the character to the correct word
+                        oCurrentWord.Push(oPChar);
+                    }
                 }
             }
 

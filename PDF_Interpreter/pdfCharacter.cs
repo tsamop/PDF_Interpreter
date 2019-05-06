@@ -17,6 +17,7 @@ namespace PDF_Interpreter
         private double mfPageHeight;
         private double mfPageWidth;
         private int miRotation;
+        private bool mbIsValid = false;
 
         public string Text { get => msThisText; }
         public double X { get => mfX; }
@@ -27,6 +28,7 @@ namespace PDF_Interpreter
         public double MaxTextHeight { get => mfMaxTextHeight; }
         public double PageHeight { get => mfPageHeight; }
         public double PageWidth { get => mfPageWidth; }
+        public bool IsValid { get => mbIsValid; }
 
 
         public pdfCharacter(object thisPDFboxCharacter)
@@ -43,6 +45,8 @@ namespace PDF_Interpreter
             {
                 //GET THE GLIPH IN QUESTION.
                 msThisText = maoPDFboxCharacter.GetField("str").ToString();
+
+                mbIsValid = !string.IsNullOrEmpty(msThisText);
 
                 miRotation = Convert.ToInt32(maoPDFboxCharacter.GetField("rot"));
 
